@@ -28,9 +28,10 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE,
            cumJoy = cumsum(joy),
            cumSadness = cumsum(sadness),
            cumSurprise = cumsum(surprise),
-           cumTrust = cumsum(trust),
-           cumNegative = cumsum(negative),
-           cumPositive = cumsum(positive)
+           cumTrust = cumsum(trust)
+           # ,
+           # cumNegative = cumsum(negative),
+           # cumPositive = cumsum(positive)
            )
   a
 }
@@ -39,6 +40,7 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE,
 bb[[1]][1] %>% emoDataframeMaker
 
 bb[[1]] %>% head %>% map(emoDataframeMaker, addColor = TRUE)
+
 listOfEmos <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
 
 listOfEmos[[3]] -> emoDF
@@ -123,10 +125,10 @@ emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends
 }
 
 ## Tests
-emoMultiPlotter(listOfEmos = emoDF, color = T)
-emoMultiPlotter(listOfEmos = emoDF, color = F)
-emoMultiPlotter(listOfEmos = emoDF, color = T, titles = titles)
-emoMultiPlotter(listOfEmos = emoDF, color = T, titles = titles, showTrends = slopes)
+emoMultiPlotter(listOfEmos = listOfEmos, color = T)
+emoMultiPlotter(listOfEmos = listOfEmos, color = F)
+emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
+emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles, showTrends = slopes)
 
 
 ## nrc plotter for fun ----
@@ -136,23 +138,25 @@ nrcMultiPlotter <- function(listOfEmos, titles = NULL){
   par(mfrow = c(4,ceiling(length(values)/4)), mar=c(2.1,2.1,2.1,2.1))
 
   for (i in seq_along(values)) {
-    if (color) {
-      plot(type = "b", values[[i]], col = colorpoints[[i]])
-    } else {
-      plot(values[[i]], type = "l")
-    }
+    plot(type = "l", values[[i]]$cumAnger, col = "red", lwd = 2, ylim = c(0,max(values[[i]])))
+    lines(type = "l", values[[i]]$cumAnticipation, lwd = 2, col = "grey")
+    lines(type = "l", values[[i]]$cumDisgust, lwd = 2, col = "#cccc33")
+    lines(type = "l", values[[i]]$cumFear, lwd = 2, col = "yellow") #FFDB58
+    lines(type = "l", values[[i]]$cumJoy, lwd = 2, col = "purple")
+    lines(type = "l", values[[i]]$cumSadness, lwd = 2, col = "black")
+    lines(type = "l", values[[i]]$cumSurprise, lwd = 2, col = "orange")
+    lines(type = "l", values[[i]]$cumTrust, lwd = 2, col = "blue")
+
+
     ## Add titles or just numbers
     if (is.null(titles)){
-      text(x=length(values[[i]])/2,y = max(values[[i]]),labels = i)
+      text(x=nrow(values[[i]])/2,y = max(values[[i]]),labels = i)
     } else {
-      text(x=length(values[[i]])/2,y = max(values[[i]]),labels = titles[i])
-    }
-    # browser()
-    ## Add trends or not
-    if (!is.null(showTrends)) {
-      if (showTrends$catNum[i] <= 2) abline(lsfit(x = seq_along(values[[i]]), y = values[[i]]),
-                                            col = "purple")
+      text(x=nrow(values[[i]])/2,y = max(values[[i]]),labels = titles[i])
     }
   }
   par(mfrow = c(1,1))
 }
+
+nrcMultiPlotter(listOfEmos = listOfEmos, titles = titles)
+
