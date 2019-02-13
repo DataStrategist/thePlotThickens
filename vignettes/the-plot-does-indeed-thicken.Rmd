@@ -1,0 +1,46 @@
+---
+title: "Vignette Title"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Load up data
+
+```{r}
+a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
+aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
+b <- read_lines(a)
+titles <- read_lines(aa) %>% head(27)
+close(a)
+
+aa
+bb <- head(b,1000)
+
+bb <- bb %>% paste(collapse = "") %>% str_split("<EOS>")
+```
+
+Now split up into sentences and grab the emotional valence (optionally with the nrc too)
+```{r}
+bb[[1]][1] %>% emoDataframeMaker -> aa
+
+emoDF <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE)
+emoDF <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
+
+emoDF[[1]]
+```
+
+
+
+

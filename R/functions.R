@@ -11,7 +11,7 @@ bb <- head(b,1000)
 
 bb <- bb %>% paste(collapse = "") %>% str_split("<EOS>")
 
-emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE){
+emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE, nrc = FALSE){
   ## Error catchers
   if (class(text) != "character") stop("Need a character vector")
   if (length(text) != 1) stop("I only take one text at a time. To feed me many, purrr:map me")
@@ -19,17 +19,34 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE)
     mutate(sentiment = syuzhet::get_sentiment(text, sentimentType)) %>%
     mutate(cumSentiment = cumsum(sentiment))
   if (addColor) a <- a %>% mutate(color = case_when(cumSentiment >= 0 ~ "green", TRUE ~ "red"))
+
+  if (nrc) a <- bind_cols(a, syuzhet::get_nrc_sentiment(a$text)) %>%
+    mutate(cumAnger = cumsum(anger),
+           cumAnticipation = cumsum(anticipation),
+           cumDisgust = cumsum(disgust),
+           cumFear = cumsum(fear),
+           cumJoy = cumsum(joy),
+           cumSadness = cumsum(sadness),
+           cumSurprise = cumsum(surprise),
+           cumTrust = cumsum(trust),
+           cumNegative = cumsum(negative),
+           cumPositive = cumsum(positive)
+           )
   a
 }
 
-bb[[1]][1] %>% emoDataframeMaker -> aa
+## Test
+bb[[1]][1] %>% emoDataframeMaker
 
-emoDF <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE)
+bb[[1]] %>% head %>% map(emoDataframeMaker, addColor = TRUE)
+listOfEmos <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
+
+listOfEmos[[3]] -> emoDF
 
 ## Slope finder ----
-slopeFinder <- function(data){
+slopeFinder <- function(emoDF){
   ## linear
-  dataToModel <- data %>% pull(cumSentiment) %>% data_frame(y = .) %>% mutate(x = 1:nrow(.))
+  dataToModel <- emoDF %>% pull(cumSentiment) %>% data_frame(y = .) %>% mutate(x = 1:nrow(.))
 
   modelLinear <- dataToModel %>% lm(y ~ x, data = .)
 
@@ -73,8 +90,8 @@ slopeFinder <- function(data){
 }
 
 ## Tests
-emoDF[[2]] %>% slopeFinder
-slopes <- emoDF %>%  map_dfr(slopeFinder)
+listOfEmos[[2]] %>% slopeFinder
+slopes <- listOfEmos %>%  map_dfr(slopeFinder)
 
 ## plot ----
 emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends = NULL){
@@ -111,3 +128,31 @@ emoMultiPlotter(listOfEmos = emoDF, color = F)
 emoMultiPlotter(listOfEmos = emoDF, color = T, titles = titles)
 emoMultiPlotter(listOfEmos = emoDF, color = T, titles = titles, showTrends = slopes)
 
+
+## nrc plotter for fun ----
+nrcMultiPlotter <- function(listOfEmos, titles = NULL){
+  values <- listOfEmos %>% map(select,contains("cum"))
+
+  par(mfrow = c(4,ceiling(length(values)/4)), mar=c(2.1,2.1,2.1,2.1))
+
+  for (i in seq_along(values)) {
+    if (color) {
+      plot(type = "b", values[[i]], col = colorpoints[[i]])
+    } else {
+      plot(values[[i]], type = "l")
+    }
+    ## Add titles or just numbers
+    if (is.null(titles)){
+      text(x=length(values[[i]])/2,y = max(values[[i]]),labels = i)
+    } else {
+      text(x=length(values[[i]])/2,y = max(values[[i]]),labels = titles[i])
+    }
+    # browser()
+    ## Add trends or not
+    if (!is.null(showTrends)) {
+      if (showTrends$catNum[i] <= 2) abline(lsfit(x = seq_along(values[[i]]), y = values[[i]]),
+                                            col = "purple")
+    }
+  }
+  par(mfrow = c(1,1))
+}
