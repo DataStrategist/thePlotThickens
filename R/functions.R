@@ -1,16 +1,24 @@
-library(tidyverse)
 
-a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
-aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
-b <- read_lines(a)
-titles <- read_lines(aa) %>% head(27)
-close(a)
-
-aa
-bb <- head(b,1000)
-
-bb <- bb %>% paste(collapse = "") %>% str_split("<EOS>")
-
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param text PARAM_DESCRIPTION
+#' @param sentimentType PARAM_DESCRIPTION, Default: 'syuzhet'
+#' @param addColor PARAM_DESCRIPTION, Default: FALSE
+#' @param nrc PARAM_DESCRIPTION, Default: FALSE
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @seealso
+#'  \code{\link[syuzhet]{get_sentences}},\code{\link[syuzhet]{get_sentiment}},\code{\link[syuzhet]{get_nrc_sentiment}}
+#' @rdname emoDataframeMaker
+#' @export
+#' @importFrom syuzhet get_sentences get_sentiment get_nrc_sentiment
+#' @importFrom dplyr %>% select mutate
 emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE, nrc = FALSE){
   ## Error catchers
   if (class(text) != "character") stop("Need a character vector")
@@ -18,7 +26,7 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE,
   a <- data_frame(text = syuzhet::get_sentences(text)) %>%
     mutate(sentiment = syuzhet::get_sentiment(text, sentimentType)) %>%
     mutate(cumSentiment = cumsum(sentiment))
-  if (addColor) a <- a %>% mutate(color = case_when(cumSentiment >= 0 ~ "green", TRUE ~ "red"))
+  if (addColor) a <- a %>% mutate(color = case_when(sentiment >= 0 ~ "green", TRUE ~ "red"))
 
   if (nrc) a <- bind_cols(a, syuzhet::get_nrc_sentiment(a$text)) %>%
     mutate(cumAnger = cumsum(anger),
@@ -36,16 +44,25 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE,
   a
 }
 
-## Test
-bb[[1]][1] %>% emoDataframeMaker
-
-bb[[1]] %>% head %>% map(emoDataframeMaker, addColor = TRUE)
-
-listOfEmos <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
-
-listOfEmos[[3]] -> emoDF
-
 ## Slope finder ----
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param emoDF PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @seealso
+#'  \code{\link[broom]{tidy}},\code{\link[broom]{glance}}
+#'  \code{\link[rlang]{syms}}
+#' @rdname slopeFinder
+#' @export
+#' @importFrom broom tidy glance
+#' @importFrom rlang syms
 slopeFinder <- function(emoDF){
   ## linear
   dataToModel <- emoDF %>% pull(cumSentiment) %>% data_frame(y = .) %>% mutate(x = 1:nrow(.))
@@ -91,11 +108,24 @@ slopeFinder <- function(emoDF){
   results
 }
 
-## Tests
-listOfEmos[[2]] %>% slopeFinder
-slopes <- listOfEmos %>%  map_dfr(slopeFinder)
 
 ## plot ----
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param listOfEmos PARAM_DESCRIPTION
+#' @param titles PARAM_DESCRIPTION, Default: NULL
+#' @param color PARAM_DESCRIPTION, Default: FALSE
+#' @param showTrends PARAM_DESCRIPTION, Default: NULL
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname emoMultiPlotter
+#' @export
 emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends = NULL){
   values <- listOfEmos %>% map("cumSentiment")
   if (color) colorpoints <- listOfEmos %>% map("color")
@@ -124,18 +154,26 @@ emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends
   par(mfrow = c(1,1))
 }
 
-## Tests
-emoMultiPlotter(listOfEmos = listOfEmos, color = T)
-emoMultiPlotter(listOfEmos = listOfEmos, color = F)
-emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
-emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles, showTrends = slopes)
-
 
 ## nrc plotter for fun ----
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param listOfEmos PARAM_DESCRIPTION
+#' @param titles PARAM_DESCRIPTION, Default: NULL
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname nrcMultiPlotter
+#' @export
 nrcMultiPlotter <- function(listOfEmos, titles = NULL){
   values <- listOfEmos %>% map(select,contains("cum"))
 
-  par(mfrow = c(4,ceiling(length(values)/4)), mar=c(2.1,2.1,2.1,2.1))
+  par(mfrow = c(4, ceiling(length(values)/4)), mar = c(2.1,2.1,2.1,2.1))
 
   for (i in seq_along(values)) {
     plot(type = "l", values[[i]]$cumAnger, col = "red", lwd = 2, ylim = c(0,max(values[[i]])))
@@ -158,5 +196,5 @@ nrcMultiPlotter <- function(listOfEmos, titles = NULL){
   par(mfrow = c(1,1))
 }
 
-nrcMultiPlotter(listOfEmos = listOfEmos, titles = titles)
+
 
