@@ -1,12 +1,12 @@
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param text PARAM_DESCRIPTION
-#' @param sentimentType PARAM_DESCRIPTION, Default: 'syuzhet'
-#' @param addColor PARAM_DESCRIPTION, Default: FALSE
-#' @param nrc PARAM_DESCRIPTION, Default: FALSE
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
+#' @title EMO dataframe maker
+#' @description Given input text outputs a dataframe of sentiment scores.
+#' @param text Input text, typically a long-form document
+#' @param sentimentType Type of sentiment analysis - an argument to syuzhet::get_sentiment, Default: 'syuzhet'
+#' @param addColor Add a column with a colour code to indicate sentiment, Default: FALSE
+#' @param nrc Add 8 columns with intensity scores for each of the emotions in the NRC emotion lexicon, Default: FALSE
+#' @return A dataframe where each row is a sentence with columns for the original text, sentiment score of the sentinence and cumulative sentiment score of the volume.
+#' @details Calculates sentence-by-sentence and cumulative sentiment scores for a given document.
 #' @examples
 #' \dontrun{
 #' if(interactive()){
@@ -45,11 +45,11 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE,
 }
 
 ## Slope finder ----
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param emoDF PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
+#' @title Slope finder
+#' @description Reports the fit of alternative emotional arcs to a document and the best fitting canonical story type.
+#' @param emoDF A document in the form of an EMO dataframe
+#' @return Outputs a tibble of one row reporting the best fitting story type.
+#' @details The output tibble contains estimates of the linear slope and estimate, R2 for the linear and sinusoidal fit, the highest R2 achieved and the most appropriate category/story type
 #' @examples
 #' \dontrun{
 #' if(interactive()){
@@ -110,11 +110,11 @@ slopeFinder <- function(emoDF){
 
 
 ## plot ----
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param listOfEmos PARAM_DESCRIPTION
-#' @param titles PARAM_DESCRIPTION, Default: NULL
-#' @param color PARAM_DESCRIPTION, Default: FALSE
+#' @title EMO multiplotter
+#' @description Takes a list of EMO  dataframes and outputs a faceted plot of the emotional arcs
+#' @param listOfEmos List of EMO dataframes
+#' @param titles Show the document titles, Default: NULL
+#' @param color Show colours to indicate sentiment - requires EMO dataframe with colour data, Default: FALSE
 #' @param showTrends PARAM_DESCRIPTION, Default: NULL
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
@@ -128,7 +128,14 @@ slopeFinder <- function(emoDF){
 #' @export
 emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends = NULL){
   values <- listOfEmos %>% map("cumSentiment")
-  if (color) colorpoints <- listOfEmos %>% map("color")
+  if (color) {
+    colorpoints <- listOfEmos %>% map("color")
+    if (is.null(unlist(colorpoints))) {
+      rm(colorpoints)
+      color <- FALSE
+      warning("Color requires an EMO dataframe with color data")
+    }
+  }
 
   par(mfrow = c(4,ceiling(length(values)/4)), mar=c(2.1,2.1,2.1,2.1))
 
@@ -156,12 +163,12 @@ emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends
 
 
 ## nrc plotter for fun ----
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param listOfEmos PARAM_DESCRIPTION
-#' @param titles PARAM_DESCRIPTION, Default: NULL
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
+#' @title NRC plotter
+#' @description Given a list of EMO dataframes, plots the cumulative score for each emotion in Saif Mohammed's NRC emotion lexicon
+#' @param listOfEmos A list of EMO dataframes
+#' @param titles Display the title of the document in the plot, Default: NULL
+#' @return A faceted plot of each document and its cumulative NRC scores
+#' @details Shows cumulative scores for anger, fear, anticipation, trust, surprise, sadness, joy, and disgust
 #' @examples
 #' \dontrun{
 #' if(interactive()){
