@@ -7,6 +7,7 @@ library(tidyverse)
 dataset <- read_csv(file("http://bit.ly/2uhqjJE?.csv"))
 titles <- dataset %>% unite(name, FirstName, President) %>% pull()
 bb <- dataset$texts
+emoDF <- emoDataframeMaker(bb[1])
 
 context("Testing emoDataframeMaker") ##########################
 test_that("emoDataframeMaker gives df", {
@@ -37,7 +38,22 @@ test_that("emoDataframeMaker color works", {
 # listOfEmos[[2]] %>% slopeFinder
 # slopes <- listOfEmos %>%  map_dfr(slopeFinder)
 # slopes
-#
+
+
+context("Testing emoPlotter")
+test_that("emoPlotter doesn't error out", {
+  expect_error(
+    emoDF %>% emoPlotter(color = TRUE, title = "Test"), NA)
+})
+
+context("Testing emoPlotter")
+test_that("emoPlotter doesn't error out", {
+  expect_error(
+    emoDF %>% emoPlotter(color = TRUE, title = "Test", showTrends = emoDF %>% slopeFinder()), NA)
+})
+
+
+
 # emoMultiPlotter(listOfEmos = listOfEmos, color = T)
 # emoMultiPlotter(listOfEmos = listOfEmos, color = F)
 # emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)

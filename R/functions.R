@@ -123,6 +123,61 @@ slopeFinder <- function(emoDF) {
 
 
 ## plot ----
+
+#' @title emoPlotter
+#' @description Takes one EMO dataframe and outputs a faceted plot of the emotional arcs
+#' @param EmoDF One EMO dataframes
+#' @param title Optional string providing title for the plot. Default: NULL
+#' @param color Show colours to indicate sentiment - requires EMO dataframe with colour data, Default: FALSE
+#' @param showTrends Optional input from slopeFinder, containing the best-fitting regression information, Default: NULL
+#' @return Returns a plot object
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname emoPlotter
+#' @export
+emoPlotter <- function(EmoDF, title = NULL, color = FALSE, showTrends = NULL) {
+  values <- emoDF$cumSentiment
+
+  if (color) {
+    colorpoints <- emoDF$color
+    if (is.null(unlist(colorpoints))) {
+      rm(colorpoints)
+      color <- FALSE
+      warning("Color requires an EMO dataframe with color data")
+    }
+  }
+  if (color) {
+    ## A note on x. in order to fit sin wave correctly, want x to go exactly 2pi wide regardless of input
+    plot(x = 2*pi/length(values) * 1:length(values), y = values, type = "b", col = colorpoints)
+  } else {
+    plot(x = 2*pi/length(values) * 1:length(values), y = values, type = "l")
+  }
+  ## Add title
+  if (!is.null(title)) text(x = pi, y = max(values), labels = title)
+
+  ## Add trends or not
+  if (!is.null(showTrends)) {
+    if (showTrends$catNum <= 2) { ## LINEAR
+      abline(a = showTrends$interceptLM, b = showTrends$slopeLM,
+             col = "purple")
+    } else if (showTrends$catNum == 3) { ## SIN
+      #lm(y ~ sin(2 * pi / per * t) + cos(2 * pi / per * t))
+      curve(showTrends$`sin(2 * pi/per * t)`*sin(2 * pi / showTrends$perSIN*x) +
+              showTrends$`cos(2 * pi/per * t)`*cos(2*pi/showTrends$perSIN*x), add = TRUE)
+
+      # lines(fitted(reslm)~t,col=4,lty=2) ## This wont work because I can't pass the reslm in a dataframe.
+
+      # curve(showTrends$A * sin(showTrends$omega * x + showTrends$phi) + showTrends$C,
+      #       col = "purple", add = TRUE) ## This is the wrong stuff
+    }
+  }
+}
+
 #' @title EMO multiplotter
 #' @description Takes a list of EMO  dataframes and outputs a faceted plot of the emotional arcs
 #' @param listOfEmos List of EMO dataframes

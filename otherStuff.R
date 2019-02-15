@@ -26,6 +26,12 @@ ttt <- listOfEmos[[1]] %>% slopeFinder
 slopes <- listOfEmos %>%  map_dfr(slopeFinder)
 slopes
 
+emoDF <- listOfEmos[[8]]
+
+
+emoDF %>% emoPlotter(color = TRUE, title = "Test")
+
+
 emoMultiPlotter(listOfEmos = listOfEmos, color = T)
 emoMultiPlotter(listOfEmos = listOfEmos, color = F)
 emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
