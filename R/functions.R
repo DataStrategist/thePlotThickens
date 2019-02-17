@@ -67,52 +67,43 @@ emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE,
 #' @importFrom broom tidy glance
 #' @importFrom rlang syms
 slopeFinder <- function(emoDF) {
-  ## linear
-  dataToModel <- emoDF %>% pull(cumSentiment) %>% data_frame(y = .) %>% mutate(x = 1:nrow(.))
+  ## linear ----------------------------------
+  dataToModel <- emoDF %>% pull(cumSentiment) %>% data_frame(y = .) %>%
+    mutate(x = 2*pi/nrow(emoDF) * 1:nrow(emoDF))
 
   modelLinear <- dataToModel %>% lm(y ~ x, data = .)
 
   slope <- modelLinear %>% broom::tidy() %>% pull("estimate")
-  rs <- modelLinear %>% broom::glance() %>% pull("r.squared")
+  rs <- modelLinear %>% broom::glance() %>% pull("sigma")
 
-  results <- data_frame(slopeLM = slope[2], interceptLM = slope[1], rsLM = rs)
+  results <- data_frame(slopeLM = slope[2], interceptLM = slope[1], sigma_LM = rs)
 
-  ## boy meets girl (sin wave)
+  ## boy meets girl (sin wave) -----------------------
   ## Thanks https://stats.stackexchange.com/questions/60994/fit-a-sinusoidal-term-to-data
   y <- dataToModel$y
   t <- dataToModel$x
 
-  # ## ############### I don't think I need the part below but get better fits when I keep it in???
-  # res <- safely(nls)(y ~ A * sin(omega * t + phi) + C, data = data.frame(t, y),
-  #   start = list(A = 1, omega = 1, phi = 1, C = 1))
-  # res <- res$result
-  # co <- coef(res)
-  # ## ^ #############
+  ## Assume start is halfway thru the curve for intercept and A goes up the rest of the way
+  res <- safely(nls)(y ~ A * sin(t) + C, data = dataToModel,
+    start = list(A = max(y) - mean(y), C = mean(y)))
+  res <- res$result
+  co <- coef(res)
 
-  ssp <- spectrum(y, plot = FALSE)
-  per <- 1 / ssp$freq[ssp$spec == max(ssp$spec)]
-  reslm <- lm(y ~ sin(2 * pi / per * t) + cos(2 * pi / per * t))
-  results$rsSIN <- broom::glance(reslm) %>% pull(r.squared)
-  # results <- bind_cols(results, co %>% data.frame %>% t %>% as.data.frame) ## This is the wrong stuff
+  results$sigma_SIN <- broom::glance(res) %>% pull(sigma)
+  results <- bind_cols(results, co %>% data.frame %>% t %>% as.data.frame)
 
-  # rg <- diff(range(y)) # to plot
-  # plot(y~t,ylim=c(min(y)-0.1*rg,max(y)+0.1*rg)) ## Pretty suer this isn't required
 
-  SINreg <- broom::tidy(reslm) %>% select(estimate) %>% t %>% as.data.frame()
-  names(SINreg) <- broom::tidy(reslm) %>% pull(term)
 
-  results <- bind_cols(results, SINreg)
-  results$perSIN <- per
-  ## getting class, first get max and then identify where it is
-  results <- results %>% mutate(mak = pmax(!!!rlang::syms(
-    grep(pattern = "rs", names(results), value = TRUE)
+  ## EVALUATE BEST ----------------------------
+  results <- results %>% mutate(mak = pmin(!!!rlang::syms(
+    grep(pattern = "sigma", names(results), value = TRUE)
   )))
 
   results <- results %>%
     mutate(category = case_when(
-      rsLM == mak & slopeLM > 0 ~ "1.rags->riches",
-      rsLM == mak & slopeLM < 0 ~ "2.riches->rags",
-      rsSIN == mak ~ "3.boy meets girl"
+      sigma_LM == mak & slopeLM > 0 ~ "1.rags->riches",
+      sigma_LM == mak & slopeLM < 0 ~ "2.riches->rags",
+      sigma_SIN == mak ~ "3.boy meets girl"
     )) %>%
     separate(category, c("catNum", "category"), sep = "\\.") %>%
     mutate(catNum = as.numeric(catNum))
@@ -126,7 +117,7 @@ slopeFinder <- function(emoDF) {
 
 #' @title emoPlotter
 #' @description Takes one EMO dataframe and outputs a faceted plot of the emotional arcs
-#' @param EmoDF One EMO dataframes
+#' @param emoDF One EMO dataframes
 #' @param title Optional string providing title for the plot. Default: NULL
 #' @param color Show colours to indicate sentiment - requires EMO dataframe with colour data, Default: FALSE
 #' @param showTrends Optional input from slopeFinder, containing the best-fitting regression information, Default: NULL
@@ -140,7 +131,44 @@ slopeFinder <- function(emoDF) {
 #' }
 #' @rdname emoPlotter
 #' @export
-emoPlotter <- function(EmoDF, title = NULL, color = FALSE, showTrends = NULL) {
+emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
+# browser()
+  plot(x, y, main = title,
+       xlab = "", ylab = "Emotional Valence",
+       xlim = c(0, 2*pi), ylim = c(min(emoDF$cumSentiment), max(emoDF$cumSentiment)))
+
+  palette <- RColorBrewer::brewer.pal(8, "Pastel1")
+  ggbg <- function(x) {
+    points(0, 0, pch = 16, cex = 1e6, col = x,
+           xlim = c(0,2*pi))
+    grid(col = "white", lty = 1)
+  }
+
+  ## Add trends or not
+  linWt = 1; sinWt = 1
+
+  if (!is.null(showTrends)) {
+    if (showTrends$catNum == 1) { ## LINEAR
+      bg <- palette[3]; linWt = 2
+    } else if (showTrends$catNum == 2) { ## LINEAR2
+      bg <- palette[1]; linWt = 2
+    } else if (showTrends$catNum == 3) { ## SIN
+      bg <- palette[2]; sinWt = 2
+    }
+
+    abline(a = showTrends$interceptLM, b = showTrends$slopeLM,
+           lwd = linWt, col = "purple", panel.first = ggbg(bg))
+    #lm(y ~ sin(2 * pi / per * t) + cos(2 * pi / per * t))
+    # curve(showTrends$`sin(2 * pi/per * t)`*sin(2 * pi / showTrends$perSIN*x) +
+    #         showTrends$`cos(2 * pi/per * t)`*cos(2*pi/showTrends$perSIN*x), add = TRUE)
+
+    # lines(fitted(reslm)~t,col=4,lty=2) ## This wont work because I can't pass the reslm in a dataframe.
+
+    curve(showTrends$A * sin(x) + showTrends$C, lwd = sinWt,
+          col = "blue", add = TRUE) ## This is the wrong stuff
+  }
+
+  ## Main plot
   values <- emoDF$cumSentiment
 
   if (color) {
@@ -150,31 +178,10 @@ emoPlotter <- function(EmoDF, title = NULL, color = FALSE, showTrends = NULL) {
       color <- FALSE
       warning("Color requires an EMO dataframe with color data")
     }
-  }
-  if (color) {
     ## A note on x. in order to fit sin wave correctly, want x to go exactly 2pi wide regardless of input
-    plot(x = 2*pi/length(values) * 1:length(values), y = values, type = "b", col = colorpoints)
+    points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment, type = "b", col = colorpoints, lwd = 2)
   } else {
-    plot(x = 2*pi/length(values) * 1:length(values), y = values, type = "l")
-  }
-  ## Add title
-  if (!is.null(title)) text(x = pi, y = max(values), labels = title)
-
-  ## Add trends or not
-  if (!is.null(showTrends)) {
-    if (showTrends$catNum <= 2) { ## LINEAR
-      abline(a = showTrends$interceptLM, b = showTrends$slopeLM,
-             col = "purple")
-    } else if (showTrends$catNum == 3) { ## SIN
-      #lm(y ~ sin(2 * pi / per * t) + cos(2 * pi / per * t))
-      curve(showTrends$`sin(2 * pi/per * t)`*sin(2 * pi / showTrends$perSIN*x) +
-              showTrends$`cos(2 * pi/per * t)`*cos(2*pi/showTrends$perSIN*x), add = TRUE)
-
-      # lines(fitted(reslm)~t,col=4,lty=2) ## This wont work because I can't pass the reslm in a dataframe.
-
-      # curve(showTrends$A * sin(showTrends$omega * x + showTrends$phi) + showTrends$C,
-      #       col = "purple", add = TRUE) ## This is the wrong stuff
-    }
+    points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment, type = "l")
   }
 }
 
@@ -194,49 +201,13 @@ emoPlotter <- function(EmoDF, title = NULL, color = FALSE, showTrends = NULL) {
 #' }
 #' @rdname emoMultiPlotter
 #' @export
-emoMultiPlotter <- function(listOfEmos, titles = NULL, color = FALSE, showTrends = NULL) {
-  values <- listOfEmos %>% map("cumSentiment")
-  if (color) {
-    colorpoints <- listOfEmos %>% map("color")
-    if (is.null(unlist(colorpoints))) {
-      rm(colorpoints)
-      color <- FALSE
-      warning("Color requires an EMO dataframe with color data")
-    }
-  }
+emoMultiPlotter <- function(listOfEmos, showTrends = NULL, titles = NULL, color = FALSE) {
+# browser()
+  par(mfrow = c(4, ceiling(length(listOfEmos) / 4)), mar = c(2.1, 2.1, 2.1, 2.1))
+  pmap(list(listOfEmos,
+            split(showTrends, seq(nrow(showTrends))),
+            as.list(titles)), .f = emoPlotter, color = color)
 
-  par(mfrow = c(4, ceiling(length(values) / 4)), mar = c(2.1, 2.1, 2.1, 2.1))
-
-  for (i in seq_along(values)) {
-    if (color) {
-      plot(type = "b", values[[i]], col = colorpoints[[i]])
-    } else {
-      plot(values[[i]], type = "l")
-    }
-    ## Add titles or just numbers
-    if (is.null(titles)) {
-      text(x = length(values[[i]]) / 2, y = max(values[[i]]), labels = i)
-    } else {
-      text(x = length(values[[i]]) / 2, y = max(values[[i]]), labels = titles[i])
-    }
-
-    ## Add trends or not
-    if (!is.null(showTrends)) {
-      if (showTrends$catNum[i] <= 2) { ## LINEAR
-        abline(a = showTrends$interceptLM[i], b = showTrends$slopeLM[i],
-               col = "purple")
-      } else if (showTrends$catNum[i] == 3) { ## SIN
-        #lm(y ~ sin(2 * pi / per * t) + cos(2 * pi / per * t))
-        curve(showTrends$`sin(2 * pi/per * t)`[i]*sin(2 * pi / showTrends$perSIN[i]*x) +
-          showTrends$`cos(2 * pi/per * t)`[i]*cos(2*pi/showTrends$perSIN[i]*x), add = TRUE)
-
-        # lines(fitted(reslm)~t,col=4,lty=2) ## This wont work because I can't pass the reslm in a dataframe.
-
-        # curve(showTrends$A[i] * sin(showTrends$omega[i] * x + showTrends$phi[i]) + showTrends$C[i],
-        #       col = "purple", add = TRUE) ## This is the wrong stuff
-      }
-    }
-  }
   par(mfrow = c(1, 1))
 }
 
