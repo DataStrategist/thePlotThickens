@@ -2,37 +2,38 @@
 library(tidyverse)
 
 a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
+stories_all <- read_lines(a)
+
 aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
-b <- read_lines(a)
-titles <- read_lines(aa) %>% head(52)
-close(a)
+titles_all <- read_lines(aa)
 
-aa
-bb <- head(b,2000)
+close(a);close(aa)
 
-bb <- bb %>% paste(collapse = "") %>% str_split("<EOS>")
-bb <- bb[[1]]
+xx <- 1000
+stories <- head(stories_all,xx) %>% paste(collapse = "") %>% str_split("<EOS>")
+stories <- stories[[1]]
+titles <- titles %>% head(length(stories))
 
 # dataset <- read_csv(file("http://bit.ly/2uhqjJE?.csv"))
-# bb <- dataset$texts
+# stories <- dataset$texts
 # titles <- dataset %>% unite(name, FirstName, President) %>% pull
 
-## Test
-listOfEmos <- bb %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
-listOfEmos
+## Get Emo valence
+listOfEmos <- stories %>% map(emoDataframeMaker, addColor = TRUE)
+listOfEmos %>% head(2)
 
 emoDF <- listOfEmos[[8]]
 
 
-## Tests
+## Slope
 emoDF %>% slopeFinder
 slopes <- listOfEmos %>%  map_dfr(slopeFinder)
 slopes
 
-emoDF <- listOfEmos[[6]]
+## Plot 1
 emoDF %>% emoPlotter(showTrends = emoDF %>% slopeFinder, color = TRUE, title = "Test")
 
-
+## Plot all
 emoMultiPlotter(listOfEmos = listOfEmos, color = T)
 emoMultiPlotter(listOfEmos = listOfEmos, color = F)
 emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
