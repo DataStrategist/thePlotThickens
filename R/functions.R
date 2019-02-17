@@ -93,16 +93,16 @@ slopeFinder <- function(emoDF) {
   results <- bind_cols(results, co %>% data.frame %>% t %>% as.data.frame)
 
   ## Big hole or spike (quadratic) -------------------------------
-  ## Assume start is halfway thru the curve for intercept and A goes up the rest of the way
-  res <- safely(nls)(y ~ AQ*t + BQ*t^2 + CQ, data = dataToModel,
-                     start = list(AQ = 1, BQ = 1, CQ = 1))
+  ## We need to shift AQ as a function of BQ to keep curves centred.
+  ## So let's set AQ to -2pi*B (which is half-way)
+  ## Play w/ this: manipulate(curve(A*x + B*x^2 + C, xlim=c(0, 2*pi)), A = slider(-30,0, -2*pi), B = slider(-10,10, 1), C = slider(-10,10,0))
+  res <- safely(nls)(y ~ -2*pi*BQ*t + BQ*t^2 + CQ, data = dataToModel,
+                     start = list(BQ = 1, CQ = 1))
   res <- res$result
   co <- coef(res)
 
   results$sigma_QUA <- broom::glance(res) %>% pull(sigma)
   results <- bind_cols(results, co %>% data.frame %>% t %>% as.data.frame)
-
-
 
   ## EVALUATE BEST ----------------------------
   results <- results %>% mutate(mak = pmin(!!!rlang::syms(
@@ -114,7 +114,8 @@ slopeFinder <- function(emoDF) {
       sigma_LM == mak & slopeLM > 0 ~ "1.rags->riches",
       sigma_LM == mak & slopeLM < 0 ~ "2.riches->rags",
       sigma_SIN == mak ~ "3.boy meets girl",
-      sigma_QUA == mak ~ "5.big hole"
+      sigma_QUA == mak & BQ > 0 ~ "5.big hole",
+      sigma_QUA == mak & BQ < 0 ~ "6.big mountain"
     )) %>%
     separate(category, c("catNum", "category"), sep = "\\.") %>%
     mutate(catNum = as.numeric(catNum))
@@ -156,27 +157,30 @@ emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
   }
 
   ## Add trends or not
-  linWt = 1; sinWt = 1; quaWt = 1
+  linWt = 1; sinWt = 1; quaWt = 1; invuWt = 1
 
   if (!is.null(showTrends)) {
     if (showTrends$catNum == 1) { ## LINEAR
-      bg <- palette[3]; linWt = 2
+      bg <- palette[3]; linWt = 3
     } else if (showTrends$catNum == 2) { ## LINEAR2
-      bg <- palette[1]; linWt = 2
+      bg <- palette[1]; linWt = 3
     } else if (showTrends$catNum == 3) { ## SIN
-      bg <- palette[2]; sinWt = 2
+      bg <- palette[2]; sinWt = 3
     } else if (showTrends$catNum == 5) { ## QUA
-      bg <- palette[5]; quaWt = 2
+      bg <- palette[5]; quaWt = 3
+    } else if (showTrends$catNum == 6) { ## INV QUA
+      bg <- palette[6]; quaWt = 3
     }
 
     ## LINEAR
-    abline(a = showTrends$interceptLM, b = showTrends$slopeLM, lwd = linWt, col = "purple", panel.first = ggbg(bg))
+    abline(a = showTrends$interceptLM, b = showTrends$slopeLM, lwd = linWt, col = "red", panel.first = ggbg(bg))
 
     ## SIN
     curve(showTrends$A * sin(x) + showTrends$C, lwd = sinWt, col = "blue", add = TRUE)
 
     ## QUA
-    curve(showTrends$AQ * x + showTrends$BQ * x^2 + showTrends$CQ, lwd = quaWt, col = "blue", add = TRUE)
+    curve(-2*pi*showTrends$BQ * x + showTrends$BQ * x^2 + showTrends$CQ, lwd = quaWt, col = "brown", add = TRUE)
+
   }
 
   ## Main plot
@@ -187,9 +191,11 @@ emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
       color <- FALSE
       warning("Color requires an EMO dataframe with color data")
     }
-    points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment, type = "b", col = colorpoints, lwd = 2)
+    points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment,
+           type = "b", col = colorpoints, lwd = 2)
   } else {
-    points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment, type = "l")
+    points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment,
+           type = "b", lwd = 3)
   }
 }
 

@@ -37,7 +37,7 @@ emoDF %>% emoPlotter(showTrends = emoDF %>% slopeFinder, color = TRUE, title = "
 emoMultiPlotter(listOfEmos = listOfEmos, color = T)
 emoMultiPlotter(listOfEmos = listOfEmos, color = F)
 emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
-emoMultiPlotter(listOfEmos = listOfEmos, showTrends = slopes, titles = titles,  color = T )
+emoMultiPlotter(listOfEmos = listOfEmos, showTrends = slopes, titles = titles,  color = F)
 
 
 nrcMultiPlotter(listOfEmos = listOfEmos, titles = titles)
