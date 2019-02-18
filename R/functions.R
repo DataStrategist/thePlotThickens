@@ -145,7 +145,7 @@ slopeFinder <- function(emoDF) {
 #' @export
 emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
 # browser()
-  plot(x, y, main = title,
+  plot(x = 0, y = 0, main = title,
        xlab = "", ylab = "Emotional Valence",
        xlim = c(0, 2*pi), ylim = c(min(emoDF$cumSentiment), max(emoDF$cumSentiment)))
 
@@ -157,7 +157,7 @@ emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
   }
 
   ## Add trends or not
-  linWt = 1; sinWt = 1; quaWt = 1; invuWt = 1
+  linWt = 1; sinWt = 1; quaWt = 1
 
   if (!is.null(showTrends)) {
     if (showTrends$catNum == 1) { ## LINEAR
@@ -217,7 +217,7 @@ emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
 #' @export
 emoMultiPlotter <- function(listOfEmos, showTrends = NULL, titles = NULL, color = FALSE) {
 # browser()
-  par(mfrow = c(4, ceiling(length(listOfEmos) / 4)), mar = c(2.1, 2.1, 2.1, 2.1))
+  par(mfrow = c(4, ceiling(length(listOfEmos) / 4)), mar = c(1.1, 1.1, 1.1, 1.1))
   pmap(list(listOfEmos,
             split(showTrends, seq(nrow(showTrends))),
             as.list(titles)), .f = emoPlotter, color = color)
@@ -244,7 +244,7 @@ emoMultiPlotter <- function(listOfEmos, showTrends = NULL, titles = NULL, color 
 nrcMultiPlotter <- function(listOfEmos, titles = NULL) {
   values <- listOfEmos %>% map(select, contains("cum"))
 
-  par(mfrow = c(4, ceiling(length(values) / 4)), mar = c(2.1, 2.1, 2.1, 2.1))
+  par(mfrow = c(4, ceiling(length(values) / 4)), mar = c(1.1, 1.1, 1.1, 1.1))
 
   for (i in seq_along(values)) {
     plot(type = "l", values[[i]]$cumAnger, col = "red", lwd = 2, ylim = c(0, max(values[[i]])))

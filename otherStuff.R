@@ -1,18 +1,21 @@
 
 library(tidyverse)
 
-a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
-stories_all <- read_lines(a)
-
-aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
-titles_all <- read_lines(aa)
-
-close(a);close(aa)
-
-xx <- 1000
-stories <- head(stories_all,xx) %>% paste(collapse = "") %>% str_split("<EOS>")
-stories <- stories[[1]]
-titles <- titles %>% head(length(stories))
+# a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
+# stories_all <- read_lines(a)
+#
+# aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
+# titles_all <- read_lines(aa)
+#
+# close(a);close(aa)
+#
+# ## Find end of 28th story
+# stories_all %>% head(1500) %>% grep(x=., "<EOS") %>% head(28)
+#
+# xx <- 1083
+# stories <- head(stories_all,xx) %>% paste(collapse = "") %>% str_split("<EOS>")
+# stories <- stories[[1]]
+# titles <- titles %>% head(length(stories))
 
 # dataset <- read_csv(file("http://bit.ly/2uhqjJE?.csv"))
 # stories <- dataset$texts
@@ -34,9 +37,6 @@ slopes
 emoDF %>% emoPlotter(showTrends = emoDF %>% slopeFinder, color = TRUE, title = "Test")
 
 ## Plot all
-emoMultiPlotter(listOfEmos = listOfEmos, color = T)
-emoMultiPlotter(listOfEmos = listOfEmos, color = F)
-emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
 emoMultiPlotter(listOfEmos = listOfEmos, showTrends = slopes, titles = titles,  color = F)
 
 

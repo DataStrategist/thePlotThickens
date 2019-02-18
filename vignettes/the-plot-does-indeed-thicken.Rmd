@@ -1,6 +1,5 @@
 ---
-title: "Vignette Title"
-author: "Vignette Author"
+title: "The plot does indeed thicken..."
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -14,32 +13,122 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+suppressPackageStartupMessages(library(tidyverse))
+library(thePlotThickens)
 ```
 
-Load up data
+# Intro
+
+Kurt Vonnegut was this awesome dude who talked about the shapes that story plots make, and how they are beautiful. There's way too much stuff to say bout that, so go [google him](https://www.google.com/search?q=kurt+vonnegut+shapes&oq=kurt+vonnegut+shapes) and come back later. Anyway, this package creates a method to obtain these shapes.
+
+# The data
+
+We will begin by analyzing some plots from the wonderful repo https://github.com/markriedl/WikiPlots (they have 100 000 movies there, #justSayin). We have included the first 30 plots, along with their corresponding titles, already cleaned, in this package... so let's see what they look like:
 
 ```{r}
-a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
-aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
-b <- read_lines(a)
-titles <- read_lines(aa) %>% head(27)
-close(a)
-
-aa
-bb <- head(b,1000)
-
-bb <- bb %>% paste(collapse = "") %>% str_split("<EOS>")
+summary(stories)
 ```
 
-Now split up into sentences and grab the emotional valence (optionally with the nrc too)
+And what does a plot look like?
+
 ```{r}
-bb[[1]][1] %>% emoDataframeMaker -> aa
-
-emoDF <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE)
-emoDF <- bb[[1]] %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
-
-emoDF[[1]]
+head(stories,1)
 ```
+
+The titles are just the corresponding titles for these plots:
+
+```{r}
+head(titles)
+```
+
+## Extracting the emotional valence
+
+So the first thing we are going to want to do is to extract the emotional valence of each story... and in this part the genius of this package is illustrated. A [long time ago](https://www.amitkohli.com/moviesentiments/#emoMo) I introduced the concept of EmoMo (Emotional Momentum). Basically, if we're exactly trying to extract shapes, I believe there is more information in chaining the emotional valences into a cumulative or running emotion... after all, the third time someone calls you a nasty name it DOES ACTUALLY hurt more. So let's create a function to extract the emotional valence of some of these stories, and sum them up into the emoMo (the cumulative emotional valence of the story). We do this with the function `emoDataframeMaker`. This will seperate the text into sentances and then extract the sentiment using the excellent package [syuzhet](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html). The specific type of emotional library we will use is the `syuzhet`, because it's trained specifically on this plot type of stuff, read more about it in the link above.You can change this using the `sentimentType` input.
+
+```{r}
+emoDataframeMaker(stories[1])
+```
+
+The sentiment above means that negative numbers are bad and positive numbers are good. If you would like a more broken down version, you can use `nrc` sentiments:
+```{r}
+emoDataframeMaker(stories[1], nrc = TRUE)
+```
+
+This will give the specific feelings, as well as their own cumulative counters as well.
+
+The rest of the functions of this package are intended to operate on a list of dataframes, so let's create that now using the `purrr::map` function. 
+```{r}
+listOfEmos <- stories %>% map(emoDataframeMaker, addColor = TRUE)
+
+## Let's take a peek to see what this looks like:
+
+listOfEmos %>% head %>% map(head,3)
+```
+
+## Get those shapes!
+
+So now we have the emotional valences, we can see what shapes they make. The shapes we will use are:
+ 1. Rags to Riches (upward sloping line)
+ 2. Riches to Rags (downloard sloping line)
+ 3. Boy meets girl (`sin(x)` wave)
+ 4. ??
+ 5. Man in a hole (Quadtratic)
+ 6. Man on a mountain (inverted quadratic)
+
+The basic idea is that we fit the data against each model and measure the goodness of fit of each regression. We will use the regression with the lowest Residual standard error in order to see which fits best (nerdy note: We can't use the r2 cause the r2 means different things in linear and nonlinear regression. We could use the AIC or BIC, but these penalize based on the model complexity and I kinda don't care (overfits welcome here!! :D). The last thing we could do is take the corr of the difference between the model and the real data, but the Residual standard error seems to perform well enough).
+
+```{r}
+emoDF <- listOfEmos[[1]]
+fitResults <- emoDF %>% slopeFinder
+
+```
+So this gives us the regression results as well as the coefficients.
+
+<<EXPLAIN EACH ONE>> 
+
+<<EXPLAIN WHY WE ARE NOT INTERESTED IN SOME OF THE REGRESSORS>>
+
+Anyway, enough maths, let's keep it going! Let's create a slopes df that contains all the stats for each plot:
+
+```{r}
+slopes <- listOfEmos %>%  map_dfr(slopeFinder)
+slopes
+
+```
+
+## Plot it!
+
+Now that we have this data, we can plot it using the plotter function, `emoPlotter`:
+```{r, out.width='100%'}
+emoDF %>% emoPlotter(showTrends = slopes[1,], color = TRUE, title = "Test")
+```
+
+This shows all regression lines, with the best-plot line shown darker.
+
+
+## Plot all
+
+So the above plotter is cool, but if we want to do a comparison, we need something to plot multiple stories all in the same thingie, and that's where this next function comes in handy, the `emoMultiPlotter`.
+
+```{r, out.width='\\textwidth'}
+par(mar = c(2.1, 2.1, 2.1, 2.1))
+emoMultiPlotter(listOfEmos = listOfEmos, showTrends = slopes, titles = titles,  color = F)
+```
+
+
+## Plotting the NRC stuff
+
+```{r, out.width='100%'}
+listofNRC <- stories %>% map(emoDataframeMaker, nrc = TRUE)
+
+nrcMultiPlotter(listOfEmos = listofNRC, titles = titles)
+```
+
+
+
+
+
 
 
 

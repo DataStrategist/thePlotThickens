@@ -4,17 +4,17 @@
 \alias{emoMultiPlotter}
 \title{EMO multiplotter}
 \usage{
-emoMultiPlotter(listOfEmos, titles = NULL, color = FALSE,
-  showTrends = NULL)
+emoMultiPlotter(listOfEmos, showTrends = NULL, titles = NULL,
+  color = FALSE)
 }
 \arguments{
 \item{listOfEmos}{List of EMO dataframes}
 
+\item{showTrends}{PARAM_DESCRIPTION, Default: NULL}
+
 \item{titles}{Show the document titles, Default: NULL}
 
 \item{color}{Show colours to indicate sentiment - requires EMO dataframe with colour data, Default: FALSE}
-
-\item{showTrends}{PARAM_DESCRIPTION, Default: NULL}
 }
 \value{
 OUTPUT_DESCRIPTION
