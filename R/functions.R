@@ -19,14 +19,13 @@
 #' @export
 #' @importFrom syuzhet get_sentences get_sentiment get_nrc_sentiment
 #' @importFrom dplyr %>% select mutate
-emoDataframeMaker <- function(text, sentimentType = "syuzhet", addColor = FALSE, nrc = FALSE) {
+emoDataframeMaker <- function(text, sentimentType = "syuzhet", nrc = FALSE) {
   ## Error catchers
   if (class(text) != "character") stop("Need a character vector")
   if (length(text) != 1) stop("I only take one text at a time. To feed me many, purrr:map me")
   a <- data_frame(text = syuzhet::get_sentences(text)) %>%
     mutate(sentiment = syuzhet::get_sentiment(text, sentimentType)) %>%
     mutate(cumSentiment = cumsum(sentiment))
-  if (addColor) a <- a %>% mutate(color = case_when(sentiment >= 0 ~ "green", TRUE ~ "red"))
 
   if (nrc) {
     a <- bind_cols(a, syuzhet::get_nrc_sentiment(a$text)) %>%
@@ -185,12 +184,8 @@ emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
 
   ## Main plot
   if (color) {
+    emoDF <- emoDF %>% mutate(color = case_when(sentiment >= 0 ~ "green", TRUE ~ "red"))
     colorpoints <- emoDF$color
-    if (is.null(unlist(colorpoints))) {
-      rm(colorpoints)
-      color <- FALSE
-      warning("Color requires an EMO dataframe with color data")
-    }
     points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment,
            type = "b", col = colorpoints, lwd = 2)
   } else {
