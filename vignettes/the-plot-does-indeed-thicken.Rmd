@@ -100,8 +100,9 @@ slopes
 ## Plot it!
 
 Now that we have this data, we can plot it using the plotter function, `emoPlotter`:
-```{r, out.width='100%'}
+```{r, out.width='100%', fig.height=3, dpi = 300}
 emoDF %>% emoPlotter(showTrends = slopes[1,], color = TRUE, title = "Test")
+
 ```
 
 This shows all regression lines, with the best-plot line shown darker.
@@ -111,19 +112,17 @@ This shows all regression lines, with the best-plot line shown darker.
 
 So the above plotter is cool, but if we want to do a comparison, we need something to plot multiple stories all in the same thingie, and that's where this next function comes in handy, the `emoMultiPlotter`.
 
-```{r, out.width='\\textwidth'}
-par(mar = c(2.1, 2.1, 2.1, 2.1))
+```{r, out.width='100%', fig.width=10, dpi = 100}
 emoMultiPlotter(listOfEmos = listOfEmos, showTrends = slopes, titles = titles,  color = F)
 ```
 
+<!-- ## Plotting the NRC stuff -->
 
-## Plotting the NRC stuff
+<!-- ```{r, fig.width= '100%', fig.fullwidth = TRUE} -->
+<!-- listofNRC <- stories %>% map(emoDataframeMaker, nrc = TRUE) -->
 
-```{r, out.width='100%'}
-listofNRC <- stories %>% map(emoDataframeMaker, nrc = TRUE)
-
-nrcMultiPlotter(listOfEmos = listofNRC, titles = titles)
-```
+<!-- nrcMultiPlotter(listOfEmos = listofNRC, titles = titles) -->
+<!-- ``` -->
 
 
 
