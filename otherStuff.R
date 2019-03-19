@@ -2,38 +2,46 @@
 library(tidyverse)
 
 # a <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/plots")
+# stories_all <- read_lines(a)
+#
 # aa <- file("C:/Users/Amit/Dropbox/Data/movie data/plots/titles")
-# b <- read_lines(a)
-# titles <- read_lines(aa) %>% head(27)
-# close(a)
+# titles_all <- read_lines(aa)
 #
-# aa
-# bb <- head(b,1000)
+# close(a);close(aa)
 #
-# bb <- bb %>% paste(collapse = "") %>% str_split("<EOS>")
+# ## Find end of 28th story
+# stories_all %>% head(1500) %>% grep(x=., "<EOS") %>% head(28)
+#
+# xx <- 1083
+# stories <- head(stories_all,xx) %>% paste(collapse = "") %>% str_split("<EOS>")
+# stories <- stories[[1]]
+# titles <- titles %>% head(length(stories))
 
-dataset <- read_csv(file("http://bit.ly/2uhqjJE?.csv"))
-bb <- dataset$texts
-titles <- dataset %>% unite(name, FirstName, President) %>% pull
+# dataset <- read_csv(file("http://bit.ly/2uhqjJE?.csv"))
+# stories <- dataset$texts
+# titles <- dataset %>% unite(name, FirstName, President) %>% pull
 
-## Test
-bb[1] %>% emoDataframeMaker
+# Load the data
+load("data/stories.rda")
+load("data/titles.rda")
 
-bb %>% head %>% map(emoDataframeMaker, addColor = TRUE)
+## Get Emo valence
+listOfEmos <- stories %>% map(emoDataframeMaker)
+listOfEmos %>% head(2)
 
-listOfEmos <- bb %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
-listOfEmos <- bb %>% map(emoDataframeMaker, addColor = FALSE, nrc = TRUE)
-listOfEmos
+emoDF <- listOfEmos[[8]]
 
-## Tests
-listOfEmos[[2]] %>% slopeFinder
+
+## Slope
+emoDF %>% slopeFinder
 slopes <- listOfEmos %>%  map_dfr(slopeFinder)
 slopes
 
-emoMultiPlotter(listOfEmos = listOfEmos, color = T)
-emoMultiPlotter(listOfEmos = listOfEmos, color = F)
-emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles)
-emoMultiPlotter(listOfEmos = listOfEmos, color = T, titles = titles, showTrends = slopes)
+## Plot 1
+emoDF %>% emoPlotter(showTrends = emoDF %>% slopeFinder, color = TRUE, title = "Test")
+
+## Plot all
+emoMultiPlotter(listOfEmos = listOfEmos, showTrends = slopes, titles = titles,  color = F)
 
 
 nrcMultiPlotter(listOfEmos = listOfEmos, titles = titles)
