@@ -21,8 +21,12 @@ library(tidyverse)
 # stories <- dataset$texts
 # titles <- dataset %>% unite(name, FirstName, President) %>% pull
 
+# Load the data
+load("data/stories.rda")
+load("data/titles.rda")
+
 ## Get Emo valence
-listOfEmos <- stories %>% map(emoDataframeMaker, addColor = TRUE)
+listOfEmos <- stories %>% map(emoDataframeMaker)
 listOfEmos %>% head(2)
 
 emoDF <- listOfEmos[[8]]
