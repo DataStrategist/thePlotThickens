@@ -22,6 +22,7 @@ bb[1] %>% emoDataframeMaker
 bb %>% head %>% map(emoDataframeMaker, addColor = TRUE)
 
 listOfEmos <- bb %>% map(emoDataframeMaker, addColor = TRUE, nrc = TRUE)
+listOfEmos <- bb %>% map(emoDataframeMaker, addColor = FALSE, nrc = TRUE)
 listOfEmos
 
 ## Tests
