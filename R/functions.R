@@ -190,11 +190,11 @@ emoPlotter <- function(emoDF, showTrends = NULL, title = NULL, color = FALSE) {
            type = "p", col = colorpoints, lwd = 2)
     # points(x = 2*pi/length(emoDF$cumSentiment) * 1:length(emoDF$cumSentiment), y = emoDF$cumSentiment,
            # type = "l", col = "darkgrey", lwd = 2) # col = colorpoints[length(colorpoints)], this would to have the colour of the lines reflect the final cumulative sentiment i.e. did the story get better or worse on balance?
-    for (i in 1:length(emoDF$cumSentiment) - 1) {
+    for (i in 1:(length(emoDF$cumSentiment) - 1)) {
       segments(
         x0 = 2*pi/length(emoDF$cumSentiment) * i,
-        x1 = 2*pi/length(emoDF$cumSentiment) * (i + 1),
         y0 = emoDF$cumSentiment[i],
+        x1 = 2*pi/length(emoDF$cumSentiment) * (i + 1),
         y1 = emoDF$cumSentiment[i + 1],
         col = colorpoints[i + 1],
         lwd = 2
